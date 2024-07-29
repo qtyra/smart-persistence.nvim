@@ -1,6 +1,6 @@
 # (WIP DON'T USE IT) smart-persistence.nvim
 
-smart-persistence.nvim is a tiny lua plugin that uses the global working directory to save sessions.
+smart-persistence.nvim is a small neovim plugin that uses the global working directory to save sessions.
 
 ## Contents
 
@@ -16,26 +16,26 @@ smart-persistence.nvim is a tiny lua plugin that uses the global working directo
 
 **There are a lot of auto-session plugins, why another one, how is this different?**
 
-Currently most auto-session plugins (or at least the ones i've tried) use the window/tab local directory (`vim.fn.getcwd()` or `vim.uv.cwd()`) **before exiting** Neovim as the session filename. To illustrate why this can be problematic, consider this case:
+All the auto-session plugins I've tried use the window/tab local directory (`vim.fn.getcwd()` or `vim.uv.cwd()`) as the session filename. To illustrate why this can be problematic, consider this case:
 
-1. Open Neovim from /foo, example: `nvim test.txt`
-2. Open a new tab with `:tabnew` and change the directory with `:tcd bar` to /foo/bar
+1. Open neovim from /foo, example: `nvim test.txt`.
+2. Open a new tab with `:tabnew` and change the directory with `:tcd bar` to /foo/bar.
 3. Close neovim with `:xa`, the directory returned by `vim.fn.getcwd()` and `vim.uv.cwd()` will be /foo/bar.
-4. The auto-session plugin will save the session as something like `$SESSIONDIR/%foo%bar.vim`.
-5. Open Neovim again, The behavior here may differ between plugins but two possible outcomes are:
-    - An old session is restored.
-    - No session is restored.
+4. The auto-session plugin saves the session as something like `$SESSIONDIR/%foo%bar.vim`.
+5. Reopen neovim, the plugin will either:
+    - Restore an old session
+    - Restore no session
 
-Both because the directory was saved with an tab/window local directory. Note that you may need to open some files to replicate this case.
+Both happen because the directory was saved with an tab/window local directory.
 
-**Why would you want tabs with different directories? Are you trying to use tabs as workspaces?**
+**Why use tabs with different directories? Are you trying to use tabs as workspaces?**
 
-While you can recreate workspaces (different projects) with tabs and `:tcd`, it's often more convenient to just open a new neovim instance. My use case (and likely that of anyone who is insterested in this plugin) is related but slightly different:
+While you can use tabs and `tcd` to recreate workspaces, it's often easier to just open a new neovim instance. My use case is related but slightly different:
 
 1. I have a directory and a project under that directory, let's say /foo and /foo/project. /foo contains valuable information like books, notes and related projects. I want to share buffers and modify content from both /foo and /fooproject without constantly switching between two OS windows.
-2. Fuzzy finders like [fzf-lua](https://github.com/ibhagwan/fzf-lua) or [telescope](https://github.com/nvim-telescope/telescope.nvim) use the current working directory to search for files or to call grep, plugins like [neogit](https://github.com/NeogitOrg/neogit) expect a .git directory, which may not exist in /foo or its parent directory.
+2. Fuzzy finders like [fzf-lua](https://github.com/ibhagwan/fzf-lua) or [telescope](https://github.com/nvim-telescope/telescope.nvim) use the current working directory to search for files or call grep, plugins like [neogit](https://github.com/NeogitOrg/neogit) expect a .git directory, which may not exist in /foo or its parent directory.
 
-The best approach to my workflow I've come up with is to use `:tcd`, but as I mentioned earlier, auto-session plugins don't work correctly with this setup, leading me to write this plugin.
+The best approach to my workflow I've come up with is to use `:tcd`, but as I mentioned earlier, auto-session plugins don't work well with this setup, leading me to write this plugin.
 
 **How do you track the global working directory?**
 
@@ -43,8 +43,8 @@ Just use `vim.fn.getcwd(-1, -1)` instead of `vim.fn.getcwd()`. Another solution,
 
 ## Features
 
-- Session's associated directory is based in the global working directory instead of the window/tab one.
-- Save different sessions according to the git branch.
+- Sessions are loaded based on the global working directory instead of the window/tab one.
+- Save different sessions based on to the git branch.
 - Support session restore at startup.
 
 ## Installation
@@ -72,7 +72,7 @@ require("smart-persistence").setup({
 
 ## Usage
 
-My recommended workflow is to have a dashboard plugin like dashboard [dashboard.nvim](https://github.com/nvimdev/dashboard-nvim) or [alpha-nvim](https://github.com/goolord/alpha-nvim) and add a one-key option to open the last session.
+My recommended workflow is to have a dashboard plugin like dashboard [dashboard.nvim](https://github.com/nvimdev/dashboard-nvim) or [alpha-nvim](https://github.com/goolord/alpha-nvim) and adding a one-key map to open the last session.
 
 Alternatively, you can set a keymap like this:
 
