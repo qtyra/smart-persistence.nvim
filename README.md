@@ -43,8 +43,8 @@ Just use `vim.fn.getcwd(-1, -1)` instead of `vim.fn.getcwd()`. Another solution,
 
 ## Features
 - Session's associated directory is based in the global working directory instead of the window/tab one.
-- TODO: Respect git branches.
-- TODO: Support auto restore.
+- Save different sessions according to the git branch.
+- TODO: support auto restore
 
 ## Installation
 
