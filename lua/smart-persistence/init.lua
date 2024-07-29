@@ -18,8 +18,9 @@ local function session_path(dir)
     dir = dir:gsub("[\\/:]+", "%%")
     if vim.uv.fs_stat(".git") then
         local obj = vim.system({ "git", "branch", "--show-current" }, { text = true }):wait()
-        if obj.code == 0 then
-            dir = dir .. "%%" .. obj.stdout:gsub("[\\/:+", "%%")
+        local branch = vim.trim(obj.stdout)
+        if obj.code == 0 and branch ~= "master" and branch ~= "main" then
+            dir = dir .. "%%" .. branch:gsub("[\\/:]+", "%%")
         end
     end
     return conf.dir .. dir .. ".vim"
