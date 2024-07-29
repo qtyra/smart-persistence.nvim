@@ -2,11 +2,14 @@
 
 local M = {}
 
+---@class SmartPersistence.Config
+---@field dir string
 local defaults = {
     dir = vim.fn.stdpath("data") .. "/smart-persistence/",
 }
 
-local conf = {}
+---@type SmartPersistence.Config
+local conf
 
 --- Session path according to a directory.
 ---@param dir string
@@ -22,6 +25,9 @@ local function session_path(dir)
     return conf.dir .. dir .. ".vim"
 end
 
+--- Filter valid buffers.
+---@param bufs number[]
+---@return number[] valid_bufs
 local function valid_buffers(bufs)
     return vim.tbl_filter(function(b)
         return vim.bo[b].buftype == ""
@@ -44,6 +50,8 @@ local function main()
     })
 end
 
+--- Setup the module.
+---@param opts SmartPersistence.Config
 function M.setup(opts)
     conf = vim.tbl_deep_extend("force", defaults, opts or {})
     vim.fn.mkdir(conf.dir, "p")
