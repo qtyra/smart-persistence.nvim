@@ -4,8 +4,10 @@ local M = {}
 
 ---@class SmartPersistence.Config
 ---@field dir string
+---@field auto_restore boolean
 local defaults = {
     dir = vim.fn.stdpath("data") .. "/smart-persistence/",
+    auto_restore = false,
 }
 
 ---@type SmartPersistence.Config
@@ -39,6 +41,9 @@ local function valid_buffers(bufs)
 end
 
 local function main()
+    if vim.fn.argc() == 0 and conf.auto_restore then
+        M.restore()
+    end
     vim.api.nvim_create_autocmd("VimLeavePre", {
         group = vim.api.nvim_create_augroup("smart-persistence", { clear = true }),
         callback = function()

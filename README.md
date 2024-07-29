@@ -42,16 +42,16 @@ The best approach to my workflow I've come up with is to use `:tcd`, but as I me
 Just use `vim.fn.getcwd(-1, -1)` instead of `vim.fn.getcwd()`. Another solution, which I used in the very first implementation of this plugin, is to set an autocommand for `DirChanged` to track directory changes made by `:cd` while ignoring `:tcd` and `:lcd`.
 
 ## Features
+
 - Session's associated directory is based in the global working directory instead of the window/tab one.
 - Save different sessions according to the git branch.
-- TODO: support auto restore
+- Support session restore at startup.
 
 ## Installation
 
 Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
--- lazy.nvim
 {
     "qtyra/smart-persistence.nvim",
     opts = {}
@@ -65,6 +65,8 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 require("smart-persistence").setup({
     -- Where to save the sessions
     dir = vim.fn.stdpath("data") .. "/smart-persistence/",
+    -- Don't automatically restore the session
+    auto_restore = false,
 })
 ```
 
@@ -92,7 +94,7 @@ or with lazy.nvim:
 
 ## Acknowledgements
 
-The code is based on [persistence.nvim](https://github.com/folke/persistence.nvim) if not outright copied. It was the auto-session plugin I used before making my own.
+The code is based on [persistence.nvim](https://github.com/folke/persistence.nvim), if not outright copied. It was the auto-session plugin I used before making my own.
 
 ## Other plugins
 
