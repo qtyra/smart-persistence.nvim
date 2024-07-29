@@ -26,22 +26,12 @@ local function valid_buffers(bufs)
 end
 
 local function main()
-    local cwd = vim.fn.getcwd()
-    local group = vim.api.nvim_create_augroup("smart-persistence", { clear = true })
-    vim.api.nvim_create_autocmd("DirChanged", {
-        group = group,
-        callback = function(ev)
-            if ev.match == "global" then
-                cwd = ev.file
-            end
-        end,
-    })
     vim.api.nvim_create_autocmd("VimLeavePre", {
-        group = group,
+        group = vim.api.nvim_create_augroup("smart-persistence", { clear = true }),
         callback = function()
             local buffers = valid_buffers(vim.api.nvim_list_bufs())
             if #buffers > 0 then
-                local file = vim.fn.fnameescape(session_path(cwd))
+                local file = vim.fn.fnameescape(session_path(vim.fn.getcwd(-1, -1)))
                 vim.cmd("mks! " .. file)
             end
         end,
@@ -56,7 +46,7 @@ end
 
 --- Restore last session
 function M.restore()
-    local file = session_path(vim.fn.getcwd())
+    local file = session_path(vim.fn.getcwd(-1, -1))
     if vim.uv.fs_stat(file) then
         vim.cmd("silent! so " .. vim.fn.fnameescape(file))
     end

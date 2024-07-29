@@ -39,13 +39,12 @@ The best approach to my workflow I've come up with is to use `:tcd`, but as I me
 
 **How do you track the global working directory?**
 
-Set an autocommand for `DirChanged` to track directory changes made by `:cd` while ignoring `:tcd` and `:lcd`.
+Just use `vim.fn.getcwd(-1, -1)` instead of `vim.fn.getcwd()`. Another solution, which I used in the very first implementation of this plugin, is to set an autocommand for `DirChanged` to track directory changes made by `:cd` while ignoring `:tcd` and `:lcd`.
 
 ## Features
 - Session's associated directory is based in the global working directory instead of the window/tab one.
 - TODO: Respect git branches.
 - TODO: Support auto restore.
-- TODO: use vim.fn.cwd(-1,-1)
 
 ## Installation
 
