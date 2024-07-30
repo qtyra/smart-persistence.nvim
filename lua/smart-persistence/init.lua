@@ -43,14 +43,25 @@ end
 
 --- Auto restore session if conditions are met.
 local function auto_restore_session()
+    local started_with_stdin = false
     if not (vim.fn.argc() == 0 and conf.auto_restore) then
         return
     end
+    vim.api.nvim_create_autocmd({ "StdinReadPre" }, {
+        once = true,
+        callback = function()
+            started_with_stdin = true
+        end,
+    })
     if vim.o.filetype ~= "lazy" then
         vim.api.nvim_create_autocmd("VimEnter", {
             nested = true,
             once = true,
-            callback = M.restore,
+            callback = function()
+                if not started_with_stdin then
+                    M.restore()
+                end
+            end,
         })
         return
     end
