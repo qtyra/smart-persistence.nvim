@@ -100,4 +100,9 @@ function M.restore()
     end
 end
 
+--- Don't save current session
+function M.stop()
+    pcall(vim.api.nvim_del_augroup_by_name, "smart-persistence")
+end
+
 return M

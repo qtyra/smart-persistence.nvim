@@ -74,24 +74,32 @@ require("smart-persistence").setup({
 
 ## Usage
 
-My recommended workflow is to have a dashboard plugin like dashboard [dashboard.nvim](https://github.com/nvimdev/dashboard-nvim) or [alpha-nvim](https://github.com/goolord/alpha-nvim) and adding a one-key map to open the last session.
-
-Alternatively, you can set a keymap like this:
+My recommended workflow is to have a dashboard plugin like dashboard [dashboard.nvim](https://github.com/nvimdev/dashboard-nvim) or [alpha-nvim](https://github.com/goolord/alpha-nvim) and adding a one-key map to open the last session. Example with dashboard.nvim:
 
 ```lua
-vim.keymap.set("n", "<leader>q", require("smart-persistence").restore)
+require("dashboard").setup({
+    config = {
+        center = {
+            {
+                action = 'lua require("smart-persistence").restore()',
+                desc = " Restore Session",
+                icon = " ",
+                key = "s",
+            },
+            -- other entries...
+        },
+    },
+}
 ```
 
-or with lazy.nvim:
+All exported functions:
 
 ```lua
-{
-    "qtyra/smart-persistence.nvim",
-    -- ...
-    keys = {
-        { "<leader>q", function() require("smart-persistence").restore() end },
-    }
-}
+-- Restore last session, set `auto_restore` to automatically call this function at startup.
+vim.keymap.set("n", "<leader>qr", function() require("smart-persistence").restore() end)
+
+-- Don't auto save the this session. Alternatively, set a list of directories in `excluded_dirs`.
+vim.keymap.set("n", "<leader>qs", function() require("smart-persistence").stop() end)
 ```
 
 ## Acknowledgements
