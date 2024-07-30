@@ -71,11 +71,11 @@ All exported functions:
 -- Restore last session, set `auto_restore` to automatically call this function at startup.
 vim.keymap.set("n", "<leader>qr", function() require("smart-persistence").restore() end)
 
--- Don't auto save the this session. Alternatively, set a list of directories in `excluded_dirs`.
-vim.keymap.set("n", "<leader>qs", function() require("smart-persistence").stop() end)
-
 -- Select a session based on your cwd and git branch.
 vim.keymap.set("n", "<leader>qs", function() require("smart-persistence").select() end)
+
+-- Don't auto save the this session. Alternatively, set a list of directories in `excluded_dirs`.
+vim.keymap.set("n", "<leader>qS", function() require("smart-persistence").stop() end)
 ```
 
 All exported commands:
