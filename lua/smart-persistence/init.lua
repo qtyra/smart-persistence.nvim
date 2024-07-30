@@ -88,7 +88,7 @@ end
 --- Restore last session
 function M.restore()
     local file = session_path(vim.fn.getcwd(-1, -1))
-    if vim.fn.filereadable(file) then
+    if vim.fn.filereadable(file) ~= 0 then
         vim.cmd("silent so " .. vim.fn.fnameescape(file))
     end
 end
