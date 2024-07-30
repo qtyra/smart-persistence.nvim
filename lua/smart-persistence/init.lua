@@ -5,9 +5,11 @@ local M = {}
 ---@class SmartPersistence.Config
 ---@field dir string
 ---@field auto_restore boolean
+---@field excluded_dirs string[]?
 local defaults = {
     dir = vim.fn.stdpath("data") .. "/smart-persistence/",
     auto_restore = false,
+    excluded_dirs = { "~/Downloads" },
 }
 
 ---@type SmartPersistence.Config
@@ -63,10 +65,14 @@ local function set_leave_autocmd()
     vim.api.nvim_create_autocmd("VimLeavePre", {
         group = vim.api.nvim_create_augroup("smart-persistence", { clear = true }),
         callback = function()
+            local cwd = vim.fn.getcwd(-1, -1)
+            if vim.list_contains(conf.excluded_dirs, cwd) then
+                return
+            end
             local buffers = valid_buffers(vim.api.nvim_list_bufs())
             if #buffers > 0 then
-                local file = vim.fn.fnameescape(session_path(vim.fn.getcwd(-1, -1)))
-                vim.cmd("mks! " .. file)
+                local file = session_path(cwd)
+                vim.cmd("mks! " .. vim.fn.fnameescape(file))
             end
         end,
     })
@@ -74,6 +80,7 @@ end
 
 local function init_config(opts)
     conf = vim.tbl_deep_extend("force", defaults, opts or {})
+    conf.excluded_dirs = conf.excluded_dirs and vim.tbl_map(vim.fs.normalize, conf.excluded_dirs)
     vim.fn.mkdir(conf.dir, "p")
 end
 

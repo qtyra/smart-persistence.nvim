@@ -43,8 +43,8 @@ Just use `vim.fn.getcwd(-1, -1)` instead of `vim.fn.getcwd()`. Another solution,
 
 ## Features
 
-- Sessions are loaded based on the global working directory instead of the window/tab one.
-- Save different sessions based on to the git branch.
+- Sessions are loaded and saved based on the global working directory instead of the window/tab one.
+- Different sessions are saved based on the git branch.
 - Support session restore at startup.
 
 ## Installation
@@ -67,6 +67,8 @@ require("smart-persistence").setup({
     dir = vim.fn.stdpath("data") .. "/smart-persistence/",
     -- Don't automatically restore the session
     auto_restore = false,
+    -- Don't automatically save session in these directories
+    excluded_dirs = { "~/Downloads" },
 })
 ```
 
