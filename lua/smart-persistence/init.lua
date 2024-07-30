@@ -44,9 +44,12 @@ local function auto_restore_session()
     if not (vim.fn.argc() == 0 and conf.auto_restore) then
         return
     end
-    -- For some reason ts highlighting doesn't load correctly without vim.schedule, why?
     if vim.o.filetype ~= "lazy" then
-        vim.schedule(M.restore)
+        vim.api.nvim_create_autocmd("VimEnter", {
+            nested = true,
+            once = true,
+            callback = M.restore,
+        })
         return
     end
     vim.api.nvim_create_autocmd("WinClosed", {
@@ -86,7 +89,7 @@ end
 function M.restore()
     local file = session_path(vim.fn.getcwd(-1, -1))
     if vim.fn.filereadable(file) then
-        vim.cmd("silent! so " .. vim.fn.fnameescape(file))
+        vim.cmd("silent so " .. vim.fn.fnameescape(file))
     end
 end
 
