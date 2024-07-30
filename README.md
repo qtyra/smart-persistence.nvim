@@ -38,7 +38,7 @@ require("smart-persistence").setup({
     dir = vim.fn.stdpath("data") .. "/smart-persistence/",
     -- Don't automatically restore the session
     auto_restore = false,
-    -- Don't automatically save session in these directories
+    -- Don't automatically save or restore a session in these directories.
     excluded_dirs = { "~/Downloads" },
     -- Maximum number of sessions stored per cwd and git branch.
     max_sessions = 10,
@@ -74,7 +74,7 @@ vim.keymap.set("n", "<leader>qr", function() require("smart-persistence").restor
 -- Select a session based on your cwd and git branch.
 vim.keymap.set("n", "<leader>qs", function() require("smart-persistence").select() end)
 
--- Don't auto save the this session. Alternatively, set a list of directories in `excluded_dirs`.
+-- Don't auto save the this session.
 vim.keymap.set("n", "<leader>qS", function() require("smart-persistence").stop() end)
 ```
 

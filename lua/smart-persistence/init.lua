@@ -61,7 +61,12 @@ end
 --- Auto restore session if conditions are met.
 local function auto_restore_session()
     local started_with_stdin = false
-    if not (vim.fn.argc() == 0 and conf.auto_restore) then
+    -- stylua: ignore
+    if
+        vim.fn.argc() ~= 0
+        or vim.list_contains(conf.excluded_dirs, vim.fn.getcwd(-1, -1))
+        or not conf.auto_restore
+    then
         return
     end
     vim.api.nvim_create_autocmd({ "StdinReadPre" }, {
