@@ -102,6 +102,11 @@ vim.keymap.set("n", "<leader>qr", function() require("smart-persistence").restor
 vim.keymap.set("n", "<leader>qs", function() require("smart-persistence").stop() end)
 ```
 
+All exported commands:
+
+- `:SmartPersistence restore`
+- `:SmartPersistence stop`
+
 ## Acknowledgements
 
 The code is based on [persistence.nvim](https://github.com/folke/persistence.nvim), if not outright copied. It was the auto-session plugin I used before making my own.

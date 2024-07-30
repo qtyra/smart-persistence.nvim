@@ -61,6 +61,40 @@ local function auto_restore_session()
     })
 end
 
+---@class SmartPersistence.subcmd
+---@field impl fun()
+
+-- https://github.com/nvim-neorocks/nvim-best-practices?tab=readme-ov-file#speaking_head-user-commands
+local function set_commands()
+    ---@type table<string, SmartPersistence.subcmd>
+    local subcmds = {
+        restore = {
+            impl = M.restore,
+        },
+        stop = {
+            impl = M.stop,
+        },
+    }
+    local function cmd_fn(opts)
+        local subcmd = subcmds[opts.fargs[1]]
+        if not subcmd then
+            vim.notify("SmartPersistence: Unknown command: " .. subcmd, vim.log.levels.ERROR)
+            return
+        end
+        subcmd.impl()
+    end
+    vim.api.nvim_create_user_command("SmartPersistence", cmd_fn, {
+        nargs = "+",
+        complete = function(arglead)
+            return vim.iter(vim.tbl_keys(subcmds))
+                :filter(function(key)
+                    return key:find(arglead) ~= nil
+                end)
+                :totable()
+        end,
+    })
+end
+
 local function set_leave_autocmd()
     vim.api.nvim_create_autocmd("VimLeavePre", {
         group = vim.api.nvim_create_augroup("smart-persistence", { clear = true }),
@@ -89,6 +123,7 @@ end
 function M.setup(opts)
     init_config(opts)
     auto_restore_session()
+    set_commands()
     set_leave_autocmd()
 end
 
