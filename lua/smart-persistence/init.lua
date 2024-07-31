@@ -110,6 +110,9 @@ local function setup_commands()
         select = {
             impl = M.select,
         },
+        delete = {
+            impl = M.delete,
+        },
     }
     local function cmd_fn(opts)
         local subcmd = subcmds[opts.fargs[1]]
@@ -174,7 +177,7 @@ function M.restore()
     end
 end
 
---- Select a session from the cwd
+--- Select a session based on your cwd and git branch.
 function M.select()
     local sessions = get_sessions()
     vim.ui.select(sessions, {
@@ -191,9 +194,26 @@ function M.select()
     end)
 end
 
---- Don't save current session
+--- Don't save the current session
 function M.stop()
     pcall(vim.api.nvim_del_augroup_by_name, "smart-persistence")
+end
+
+--- Remove all associated sessions with the current directory and git branch.
+function M.delete()
+    local dir = get_session_dir()
+    local fd = vim.uv.fs_scandir(dir)
+    if not fd then
+        return
+    end
+    while true do
+        local name = vim.uv.fs_scandir_next(fd)
+        if not name then
+            break
+        end
+        vim.uv.fs_unlink(vim.fs.joinpath(dir, name))
+    end
+    vim.uv.fs_rmdir(dir)
 end
 
 return M

@@ -74,8 +74,11 @@ vim.keymap.set("n", "<leader>qr", function() require("smart-persistence").restor
 -- Select a session based on your cwd and git branch.
 vim.keymap.set("n", "<leader>qs", function() require("smart-persistence").select() end)
 
--- Don't auto save the this session.
+-- Don't save the current session
 vim.keymap.set("n", "<leader>qS", function() require("smart-persistence").stop() end)
+
+-- Remove all associated sessions with the current directory and git branch.
+vim.keymap.set("n", "<leader>qd", function() require("smart-persistence").delete() end)
 ```
 
 All exported commands:
@@ -83,6 +86,7 @@ All exported commands:
 - `:SmartPersistence restore`
 - `:SmartPersistence stop`
 - `:SmartPersistence select`
+- `:SmartPersistence delete`
 
 ## Acknowledgements
 
