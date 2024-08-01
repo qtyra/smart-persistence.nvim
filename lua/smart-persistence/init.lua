@@ -2,71 +2,66 @@
 
 local M = {}
 
----@class SmartPersistence.Config
+---@class SmartPersistence.config
 ---@field dir string
 ---@field auto_restore boolean
 ---@field excluded_dirs string[]?
+---@field excluded_filetypes string[]?
 ---@field max_sessions number
 local defaults = {
     dir = vim.fn.stdpath("data") .. "/smart-persistence/",
-    auto_restore = false,
-    excluded_dirs = { "~/Downloads" },
+    auto_save = true,
+    auto_restore = true,
+    excluded_dirs = { "~" },
+    excluded_filetypes = { "gitcommit", "gitrebase" },
     max_sessions = 10,
 }
 
----@type SmartPersistence.Config
+---@type SmartPersistence.config
 local conf
 
---- Builds the session dir respecting git branches
+--- @return string? branch
+local function get_git_branch()
+    if vim.fn.isdirectory(".git") then
+        local branch = vim.fn.systemlist("git branch --show-current")[1]
+        return vim.v.shell_error == 0 and branch or nil
+    end
+end
+
 ---@return string path
 local function get_session_dir()
     local cwd = vim.fn.getcwd(-1, -1)
     local dir = conf.dir .. cwd:gsub("[\\/:]+", "%%")
-    if vim.fn.isdirectory(".git") then
-        local obj = vim.system({ "git", "branch", "--show-current" }, { text = true }):wait()
-        local branch = vim.trim(obj.stdout)
-        if obj.code == 0 and branch ~= "master" and branch ~= "main" then
-            dir = dir .. "%%" .. branch:gsub("[\\/:]+", "%%")
-        end
+    local branch = get_git_branch()
+    if branch and branch ~= "main" and branch ~= "master" then
+        dir = dir .. "%%" .. branch:gsub("[\\/:]+", "%%")
     end
-    vim.fn.mkdir(dir, "p")
     return dir
 end
 
-local function get_session_file(file)
-    return vim.fs.joinpath(get_session_dir(), file) .. ".vim"
-end
-
---- Filter valid buffers.
 ---@param bufs number[]
 ---@return number[] valid_bufs
 local function get_valid_buffers(bufs)
     return vim.tbl_filter(function(b)
         return vim.bo[b].buftype == ""
             and vim.api.nvim_buf_get_name(b) ~= ""
-            and not vim.tbl_contains({ "gitcommit", "gitrebase" }, vim.bo[b].filetype)
+            and not vim.tbl_contains(conf.excluded_filetypes, vim.bo[b].filetype)
     end, bufs)
 end
 
---- Sessions in the current directory
 --- @return string[]
 local function get_sessions()
-    local sessions = vim.fn.glob(get_session_file("*"), true, true)
+    local pattern = vim.fs.joinpath(get_session_dir(), "*.vim")
+    local sessions = vim.fn.glob(pattern, true, true)
     table.sort(sessions, function(a, b)
         return vim.uv.fs_stat(a).mtime.sec > vim.uv.fs_stat(b).mtime.sec
     end)
     return sessions
 end
 
---- Auto restore session if conditions are met.
 local function auto_restore_session()
     local started_with_stdin = false
-    -- stylua: ignore
-    if
-        vim.fn.argc() ~= 0
-        or vim.list_contains(conf.excluded_dirs, vim.fn.getcwd(-1, -1))
-        or not conf.auto_restore
-    then
+    if vim.fn.argc() > 0 or vim.list_contains(conf.excluded_dirs, vim.fn.getcwd(-1, -1)) or not conf.auto_restore then
         return
     end
     vim.api.nvim_create_autocmd({ "StdinReadPre" }, {
@@ -81,38 +76,42 @@ local function auto_restore_session()
             once = true,
             callback = function()
                 if not started_with_stdin then
-                    M.restore()
+                    M.last()
                 end
             end,
         })
-        return
+    else
+        vim.api.nvim_create_autocmd("WinClosed", {
+            pattern = tostring(vim.api.nvim_get_current_win()),
+            once = true,
+            callback = vim.schedule_wrap(M.last),
+        })
     end
-    vim.api.nvim_create_autocmd("WinClosed", {
-        pattern = tostring(vim.api.nvim_get_current_win()),
-        once = true,
-        callback = vim.schedule_wrap(M.restore),
+end
+
+local function auto_save_session()
+    vim.api.nvim_create_autocmd("VimLeavePre", {
+        group = vim.api.nvim_create_augroup("smart-persistence", { clear = true }),
+        callback = function()
+            local buffers = get_valid_buffers(vim.api.nvim_list_bufs())
+            if conf.auto_save and not vim.list_contains(conf.excluded_dirs, vim.fn.getcwd(-1, -1)) and #buffers > 0 then
+                M.save()
+            end
+        end,
     })
 end
 
 ---@class SmartPersistence.subcmd
 ---@field impl fun()
 
--- https://github.com/nvim-neorocks/nvim-best-practices?tab=readme-ov-file#speaking_head-user-commands
 local function setup_commands()
     ---@type table<string, SmartPersistence.subcmd>
     local subcmds = {
-        restore = {
-            impl = M.restore,
-        },
-        stop = {
-            impl = M.stop,
-        },
-        select = {
-            impl = M.select,
-        },
-        delete = {
-            impl = M.delete,
-        },
+        last = { impl = M.last },
+        stop = { impl = M.stop },
+        select = { impl = M.select },
+        delete = { impl = M.delete },
+        save = { impl = M.save },
     }
     local function cmd_fn(opts)
         local subcmd = subcmds[opts.fargs[1]]
@@ -134,47 +133,32 @@ local function setup_commands()
     })
 end
 
-local function save_at_exit()
-    vim.api.nvim_create_autocmd("VimLeavePre", {
-        group = vim.api.nvim_create_augroup("smart-persistence", { clear = true }),
-        callback = function()
-            if vim.list_contains(conf.excluded_dirs, vim.fn.getcwd(-1, -1)) then
-                return
-            end
-            local sessions = get_sessions()
-            if #sessions >= conf.max_sessions then
-                vim.uv.fs_unlink(sessions[#sessions])
-            end
-            local buffers = get_valid_buffers(vim.api.nvim_list_bufs())
-            if #buffers > 0 then
-                local file = get_session_file(vim.fn.localtime())
-                vim.cmd("mks! " .. vim.fn.fnameescape(file))
-            end
-        end,
-    })
-end
-
 local function init_config(opts)
     conf = vim.tbl_deep_extend("force", defaults, opts or {})
     conf.excluded_dirs = conf.excluded_dirs and vim.tbl_map(vim.fs.normalize, conf.excluded_dirs)
     vim.fn.mkdir(conf.dir, "p")
 end
 
+local function restore_session(session)
+    if vim.fn.filereadable(session) == 1 then
+        vim.api.nvim_exec_autocmds("User", { pattern = "SmartPersistenceRestorePre", data = { session = session } })
+        vim.cmd("silent so " .. vim.fn.fnameescape(session))
+        vim.api.nvim_exec_autocmds("User", { pattern = "SmartPersistenceRestorePost", data = { session = session } })
+    end
+end
+
 --- Setup the module.
----@param opts SmartPersistence.Config
+---@param opts SmartPersistence.config
 function M.setup(opts)
     init_config(opts)
     auto_restore_session()
     setup_commands()
-    save_at_exit()
+    auto_save_session()
 end
 
 --- Restore last session
-function M.restore()
-    local file = get_sessions()[1]
-    if vim.fn.filereadable(file) ~= 0 then
-        vim.cmd("silent so " .. vim.fn.fnameescape(file))
-    end
+function M.last()
+    restore_session(get_sessions()[1])
 end
 
 --- Select a session based on your cwd and git branch.
@@ -189,12 +173,28 @@ function M.select()
     }, function(file)
         if file then
             vim.cmd("%bd!")
-            vim.cmd("silent so " .. vim.fn.fnameescape(file))
+            restore_session(file)
         end
     end)
 end
 
---- Don't save the current session
+-- Save the current session, it won't stop `auto_save`.
+function M.save()
+    local dir = get_session_dir()
+    local file = vim.fs.joinpath(dir, vim.fn.localtime()) .. ".vim"
+    vim.api.nvim_exec_autocmds("User", { pattern = "SmartPersistenceSavePre", data = { session = file } })
+    local sessions = get_sessions()
+    if #sessions >= conf.max_sessions then
+        vim.uv.fs_unlink(sessions[#sessions])
+    end
+    vim.notify(vim.inspect(dir))
+    vim.notify(vim.inspect(file))
+    vim.fn.mkdir(dir, "p")
+    vim.cmd("mks! " .. vim.fn.fnameescape(file))
+    vim.api.nvim_exec_autocmds("User", { pattern = "SmartPersistenceSavePost", data = { session = file } })
+end
+
+--- Don't save the current session.
 function M.stop()
     pcall(vim.api.nvim_del_augroup_by_name, "smart-persistence")
 end
@@ -202,18 +202,12 @@ end
 --- Remove all associated sessions with the current directory and git branch.
 function M.delete()
     local dir = get_session_dir()
-    local fd = vim.uv.fs_scandir(dir)
-    if not fd then
-        return
-    end
-    while true do
-        local name = vim.uv.fs_scandir_next(fd)
-        if not name then
-            break
-        end
-        vim.uv.fs_unlink(vim.fs.joinpath(dir, name))
+    vim.api.nvim_exec_autocmds("User", { pattern = "SmartPersistenceDeletePre", data = { dir = dir } })
+    for file in vim.fs.dir(dir) do
+        vim.uv.fs_unlink(vim.fs.joinpath(dir, file))
     end
     vim.uv.fs_rmdir(dir)
+    vim.api.nvim_exec_autocmds("User", { pattern = "SmartPersistenceDeletePost", data = { dir = dir } })
 end
 
 return M

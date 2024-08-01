@@ -8,8 +8,7 @@ smart-persistence.nvim is a small neovim plugin that uses the global working dir
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
-- [Acknowledgements](#acknowledgements)
-- [Other plugins](#other-plugins)
+- [Alternatives](#alternatives)
 
 ## Features
 
@@ -40,6 +39,11 @@ require("smart-persistence").setup({
     auto_restore = false,
     -- Don't automatically save or restore a session in these directories.
     excluded_dirs = { "~/Downloads" },
+    -- smart-persistence.nvim will only auto save when there is at least one
+    -- 'valid buffer', check out the 'valid_buffers' function in the code to
+    -- understand what that means, excludes certain filetypes for being valid,
+    -- especifically those listed here.
+    excluded_filetypes = { "gitcommit", "gitrebase" },
     -- Maximum number of sessions stored per cwd and git branch.
     max_sessions = 10,
 })
@@ -71,6 +75,9 @@ All exported functions:
 -- Restore last session, set `auto_restore` to automatically call this function at startup.
 vim.keymap.set("n", "<leader>qr", function() require("smart-persistence").restore() end)
 
+-- Save the current session, it won't stop `auto_save`.
+vim.keymap.set("n", "<leader>qv", function() require("smart-persistence").save() end)
+
 -- Select a session based on your cwd and git branch.
 vim.keymap.set("n", "<leader>qs", function() require("smart-persistence").select() end)
 
@@ -87,11 +94,26 @@ All exported commands:
 - `:SmartPersistence stop`
 - `:SmartPersistence select`
 - `:SmartPersistence delete`
+- `:SmartPersistence save`
 
-## Acknowledgements
+All events:
 
-The code is based on [persistence.nvim](https://github.com/folke/persistence.nvim). It was the auto-session plugin I used before making my own.
+- `SmartPersistenceSavePre`
+- `SmartPersistenceSavePost`
+- `SmartPersistenceRestorePre`
+- `SmartPersistenceRestorePost`
+- `SmartPersistenceDeletePre`
+- `SmartPersistenceDeletePost`
 
-## Other plugins
+## Alternatives
 
-- [auto-session](https://github.com/rmagatti/auto-session): The use of the global working directory [was requested in 2022](https://github.com/rmagatti/auto-session/issues/189) but is still open.
+- [persistence.nvim](https://github.com/folke/persistence.nvim):
+    - Minimal wrapper around native vim sessions, it's your best option if you don't need all the bells and whistles of this or other plugins. The codebase is based on this plugin and i was the session plugin it was using before making my own.
+    - Doesn't support auto restore, the author [is not willing to add it](https://github.com/folke/persistence.nvim/issues/21#issuecomment-1656161859)
+    - Doesn't use the global working directory.
+
+- [auto-session](https://github.com/rmagatti/auto-session):
+    - Has a telescope extension, smart-persistence.nvim uses `vim.ui.select` so you can use [dressing.nvim](https://github.com/stevearc/dressing.nvim) to use telescope (or [fzf-lua](https://github.com/ibhagwan/fzf-lua) as a selector).
+    - Much more customizable, more options and more mature.
+    - Doesn't support multiple sessions per directory.
+    - The use of the global working directory [was requested in 2022](https://github.com/rmagatti/auto-session/issues/189) but it's still open.
